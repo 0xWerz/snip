@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
+
+  <title>snip - save your code snippets</title>
+  <style>
+    body {
+      height: 100vh;
+      width: 100vw;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      /* background-image: url("/detroit.png"); */
+      /* background-size: cover; */
+      /* background-position: center; */
+      /* background-repeat: no-repeat; */
+      background-color: #000000;
+      background-blend-mode: overlay;
+      overflow: hidden;
+    }
+
+    #editor-container {
+      padding: 40px 50px;
+      width: calc(100% - 100px);
+      height: calc(100% - 40px);
+      display: flex;
+    }
+
+    #line-numbers {
+      width: 30px;
+      padding-right: 10px;
+      text-align: right;
+      color: #666;
+      font-family: monospace;
+      user-select: none;
+      overflow-y: hidden;
+    }
+
+    #editor-wrapper {
+      flex-grow: 1;
+      position: relative;
+    }
+
+    #editor {
+      width: 100%;
+      height: 100%;
+      resize: none;
+      font-family: monospace;
+      padding: 0;
+      border: none;
+      background-color: transparent;
+      outline: none;
+      user-select: text;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
+      white-space: pre;
+      color: #ffffff;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #editor::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #editor::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #editor::-webkit-scrollbar-thumb {
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 4px;
+    }
+
+    @keyframes blink {
+      0% {
+        opacity: 0;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+      }
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    pre {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    code {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: transparent;
+    }
+
+    #chevron {
+      width: 30px;
+      padding-right: 10px;
+      text-align: right;
+      color: #666;
+      font-family: monospace;
+      user-select: none;
+      overflow-y: hidden;
+      font-size: 15px;
+      color: #ffffff;
+      margin-top: -2px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="editor-container">
+    <div id="line-numbers"></div>
+    <div id="chevron">> </div>
+    <div id="editor-wrapper">
+      <pre><code id="editor" contenteditable="true" spellcheck="false"></code></pre>
+    </div>
+  </div>
+  <script>
+    let currentMode = 'edit';
+
+    async function saveSnippet() {
+      try {
+        const code = document.getElementById('editor').textContent;
+        const response = await fetch('/save', { method: 'POST', body: code });
+        const result = await response.json();
+        showSavedCode(result.key, code);
+      } catch (error) {
+        console.error('Error:', error.message);
+      }
+    }
+
+    function showSavedCode(key, code) {
+      // Change the URL without reloading the page
+      history.pushState(null, '', `/${key}`);
+
+      // Update the editor content with highlighted code
+      const editor = document.getElementById('editor');
+      editor.textContent = code;
+      editor.contentEditable = 'false';
+
+      // Apply syntax highlighting
+      hljs.highlightAll();
+      currentMode = 'view';
+      updateLineNumbers();
+
+      // Show line numbers
+      document.getElementById('line-numbers').style.display = 'block';
+      document.getElementById('chevron').style.display = 'none';
+    }
+
+    function switchToEditMode() {
+      const editor = document.getElementById('editor');
+      editor.contentEditable = 'true';
+      editor.innerHTML = editor.textContent; // Remove highlighting
+      currentMode = 'edit';
+      updateLineNumbers();
+    }
+
+    function updateLineNumbers() {
+      const editor = document.getElementById('editor');
+      const lineNumbers = document.getElementById('line-numbers');
+      const lines = editor.textContent.split('\n');
+      lineNumbers.innerHTML = lines.map((_, index) => index + 1).join('<br>');
+    }
+
+    document.addEventListener('keydown', async (e) => {
+      if (e.key === 's' && e.ctrlKey) {
+        e.preventDefault();
+        if (currentMode === 'edit') {
+          await saveSnippet();
+        }
+      } else if (e.key === 'e' && e.ctrlKey) {
+        e.preventDefault();
+        if (currentMode === 'view') {
+          switchToEditMode();
+        }
+      }
+    });
+
+    // Automatically focus the editor when the page loads
+    window.addEventListener('load', () => {
+      document.getElementById('editor').focus();
+      if (window.location.pathname !== '/') {
+        updateLineNumbers();
+      } else {
+        document.getElementById('line-numbers').style.display = 'none';
+      }
+    });
+
+    // Update line numbers on input
+    document.getElementById('editor').addEventListener('input', () => {
+      if (window.location.pathname !== '/') {
+        updateLineNumbers();
+      }
+    });
+
+    // Sync scrolling between editor and line numbers
+    document.getElementById('editor').addEventListener('scroll', () => {
+      document.getElementById('line-numbers').scrollTop = document.getElementById('editor').scrollTop;
+    });
+  </script>
+</body>
+
+</html>

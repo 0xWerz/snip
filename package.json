@@ -1,0 +1,16 @@
+{
+  "name": "snip",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/express": "^5.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@vercel/blob": "^0.25.1",
+    "express": "^4.21.1"
+  }
+}
