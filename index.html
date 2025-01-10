@@ -132,6 +132,66 @@
       color: #ffffff;
       margin-top: -2px;
     }
+
+    /* Add these new styles for the dialog */
+    dialog {
+      background: #000000;
+      color: #ffffff;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 20px;
+      max-width: 400px;
+      font-family: monospace;
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.9);
+    }
+
+    dialog h2 {
+      color: #ffffff;
+      margin-top: 0;
+      font-weight: normal;
+      font-size: 1.1em;
+    }
+
+    dialog ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 20px 0;
+    }
+
+    dialog li {
+      margin: 8px 0;
+      padding: 8px;
+      background: #111;
+      border-radius: 2px;
+      font-size: 0.9em;
+    }
+
+    dialog kbd {
+      background: #222;
+      padding: 2px 4px;
+      border-radius: 2px;
+      border: 1px solid #333;
+      font-size: 0.9em;
+    }
+
+    dialog button {
+      margin-top: 20px;
+      width: 100%;
+      background: #111;
+      color: #fff;
+      border: 1px solid #333;
+      padding: 8px;
+      font-family: monospace;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    dialog button:hover {
+      background: #222;
+    }
   </style>
 </head>
 
@@ -143,90 +203,19 @@
       <pre><code id="editor" contenteditable="true" spellcheck="false"></code></pre>
     </div>
   </div>
-  <script>
-    let currentMode = 'edit';
 
-    async function saveSnippet() {
-      try {
-        const code = document.getElementById('editor').textContent;
-        const response = await fetch('/save', { method: 'POST', body: code });
-        const result = await response.json();
-        showSavedCode(result.key, code);
-      } catch (error) {
-        console.error('Error:', error.message);
-      }
-    }
+  <dialog id="tutorial-dialog">
+    <h2>Welcome to snip!</h2>
+    <ul>
+      <li>Start typing your code in the editor</li>
+      <li>Press <kbd>Ctrl</kbd> + <kbd>S</kbd> to save your snippet</li>
+      <li>Share the URL with others to show your code</li>
+      <li>When viewing saved code, press <kbd>Ctrl</kbd> + <kbd>E</kbd> to edit</li>
+    </ul>
+    <button onclick="this.parentElement.close()">Got it!</button>
+  </dialog>
 
-    function showSavedCode(key, code) {
-      // Change the URL without reloading the page
-      history.pushState(null, '', `/${key}`);
-
-      // Update the editor content with highlighted code
-      const editor = document.getElementById('editor');
-      editor.textContent = code;
-      editor.contentEditable = 'false';
-
-      // Apply syntax highlighting
-      hljs.highlightAll();
-      currentMode = 'view';
-      updateLineNumbers();
-
-      // Show line numbers
-      document.getElementById('line-numbers').style.display = 'block';
-      document.getElementById('chevron').style.display = 'none';
-    }
-
-    function switchToEditMode() {
-      const editor = document.getElementById('editor');
-      editor.contentEditable = 'true';
-      editor.innerHTML = editor.textContent; // Remove highlighting
-      currentMode = 'edit';
-      updateLineNumbers();
-    }
-
-    function updateLineNumbers() {
-      const editor = document.getElementById('editor');
-      const lineNumbers = document.getElementById('line-numbers');
-      const lines = editor.textContent.split('\n');
-      lineNumbers.innerHTML = lines.map((_, index) => index + 1).join('<br>');
-    }
-
-    document.addEventListener('keydown', async (e) => {
-      if (e.key === 's' && e.ctrlKey) {
-        e.preventDefault();
-        if (currentMode === 'edit') {
-          await saveSnippet();
-        }
-      } else if (e.key === 'e' && e.ctrlKey) {
-        e.preventDefault();
-        if (currentMode === 'view') {
-          switchToEditMode();
-        }
-      }
-    });
-
-    // Automatically focus the editor when the page loads
-    window.addEventListener('load', () => {
-      document.getElementById('editor').focus();
-      if (window.location.pathname !== '/') {
-        updateLineNumbers();
-      } else {
-        document.getElementById('line-numbers').style.display = 'none';
-      }
-    });
-
-    // Update line numbers on input
-    document.getElementById('editor').addEventListener('input', () => {
-      if (window.location.pathname !== '/') {
-        updateLineNumbers();
-      }
-    });
-
-    // Sync scrolling between editor and line numbers
-    document.getElementById('editor').addEventListener('scroll', () => {
-      document.getElementById('line-numbers').scrollTop = document.getElementById('editor').scrollTop;
-    });
-  </script>
+  <script src="/script.js"></script>
 </body>
 
 </html>
